@@ -83,11 +83,29 @@ public class DBTermProject {
         try {
             System.out.print("Insert into which table? (예: Club): ");
             String table = scanner.next();
-            System.out.print("Enter the data to insert: ");
-            String data = scanner.next();
 
-            String query = "INSERT INTO " + table + " VALUES (" + data + ")";
+            // 테이블의 컬럼 가져오기
+            String columnQuery = "DESCRIBE " + table;
             Statement stmt = connection.createStatement();
+            ResultSet rsColumns = stmt.executeQuery(columnQuery);
+
+            System.out.println("Columns in " + table + " table:");
+            StringBuilder columns = new StringBuilder();
+            StringBuilder values = new StringBuilder();
+            while (rsColumns.next()) {
+                String columnName = rsColumns.getString("Field");
+                System.out.print("Enter value for column '" + columnName + "': ");
+                String value = scanner.next();
+                columns.append(columnName).append(", ");
+                values.append("'").append(value).append("', ");
+            }
+
+            // 컬럼과 값에서 마지막 쉼표 제거
+            columns.setLength(columns.length() - 2);
+            values.setLength(values.length() - 2);
+
+            // 삽입 쿼리 실행
+            String query = "INSERT INTO " + table + " (" + columns + ") VALUES (" + values + ")";
             int rowsAffected = stmt.executeUpdate(query);
             System.out.println("데이터 삽입 완료: " + rowsAffected + " 행 삽입되었습니다.");
         } catch (SQLException e) {
@@ -100,16 +118,37 @@ public class DBTermProject {
         try {
             System.out.print("Enter the table to search in: ");
             String table = scanner.next();
-            System.out.print("Enter the condition (e.g., id=1): ");
-            String condition = scanner.next();
 
-            String query = "SELECT * FROM " + table + " WHERE " + condition;
+            // 테이블의 컬럼 가져오기
+            String columnQuery = "DESCRIBE " + table;
             Statement stmt = connection.createStatement();
-            ResultSet rs = stmt.executeQuery(query);
+            ResultSet rsColumns = stmt.executeQuery(columnQuery);
 
-            while (rs.next()) {
-                // 예시: Club 테이블에 컬럼이 Cname, Room이라면 아래처럼 출력
-                System.out.println("Cname: " + rs.getString("Cname") + ", Room: " + rs.getString("Room"));
+            System.out.println("Columns in " + table + " table:");
+            while (rsColumns.next()) {
+                String columnName = rsColumns.getString("Field");
+                System.out.println(columnName);
+            }
+
+            // 조회할 조건 입력 받기
+            System.out.print("Enter the condition (e.g., Activity_id=1): ");
+            scanner.nextLine();  // 버퍼 비우기
+            String condition = scanner.nextLine();
+
+            // 쿼리 실행
+            String query = "SELECT * FROM " + table + " WHERE " + condition;
+
+            // 쿼리 실행
+            ResultSet rsData = stmt.executeQuery(query);
+
+            // 결과 출력
+            ResultSetMetaData rsMeta = rsData.getMetaData();
+            int columnCount = rsMeta.getColumnCount();
+            while (rsData.next()) {
+                for (int i = 1; i <= columnCount; i++) {
+                    System.out.print(rsMeta.getColumnLabel(i) + ": " + rsData.getString(i) + "  ");
+                }
+                System.out.println();
             }
         } catch (SQLException e) {
             System.out.println("조회 실패: " + e.getMessage());
